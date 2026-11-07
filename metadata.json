@@ -1,0 +1,6 @@
+{
+  "name": "Scene Shadow: Say It Again!",
+  "description": "Movie-clip shadowing practice app for English learners featuring Inside Out with segmented playback, looping, voice recording, and pronunciation self-check.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
