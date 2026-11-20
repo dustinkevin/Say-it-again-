@@ -1,10 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { LogIn } from 'lucide-react';
+import { useAuth } from './contexts/AuthContext';
 import { YouTubePlayer, YouTubePlayerRef } from './components/YouTubePlayer';
 import { StartScreen } from './components/StartScreen';
 import { SentenceListScreen } from './components/SentenceListScreen';
 import { PracticeScreen } from './components/PracticeScreen';
 import { EditScreen } from './components/EditScreen';
 import { FinishScreen } from './components/FinishScreen';
+import { ActivitySummaryScreen } from './components/ActivitySummaryScreen';
+import { LoginModal } from './components/LoginModal';
+import { UserProfilePopover } from './components/UserProfilePopover';
 import {
   Sentence,
   SentenceProgress,
@@ -25,8 +30,20 @@ export default function App() {
   const [currentScreen, setCurrentScreen] = useState<ScreenType>('start');
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [isLoopWaiting, setIsLoopWaiting] = useState<boolean>(false);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState<boolean>(false);
 
+  const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
+  const wasAuthenticatedRef = useRef<boolean>(false);
   const playerRef = useRef<YouTubePlayerRef | null>(null);
+
+  // Navigate to main page and close modal whenever login completes
+  useEffect(() => {
+    if (!wasAuthenticatedRef.current && isAuthenticated) {
+      setIsLoginModalOpen(false);
+      setCurrentScreen('start');
+    }
+    wasAuthenticatedRef.current = isAuthenticated;
+  }, [isAuthenticated]);
 
   // Sync state to storage
   const handleSaveSentences = (newSentences: Sentence[]) => {
@@ -118,6 +135,31 @@ export default function App() {
                 Edit
               </button>
             )}
+            {currentScreen !== 'summary' && (
+              <button
+                onClick={() => setCurrentScreen('summary')}
+                className="px-2.5 py-1 text-slate-600 hover:text-slate-900 rounded-lg hover:bg-slate-100 transition-colors font-semibold cursor-pointer"
+              >
+                요약
+              </button>
+            )}
+            {isAuthenticated ? (
+              <UserProfilePopover />
+            ) : (
+              <a
+                href="#login"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setIsLoginModalOpen(true);
+                }}
+                className={`inline-flex items-center gap-1 px-2.5 py-1 text-sky-600 hover:text-sky-700 hover:underline underline-offset-2 rounded-lg hover:bg-sky-50 transition-colors font-bold cursor-pointer ${
+                  isAuthLoading ? 'opacity-60' : ''
+                }`}
+              >
+                <LogIn className="w-3.5 h-3.5" />
+                <span>로그인</span>
+              </a>
+            )}
           </div>
         </header>
 
@@ -180,7 +222,22 @@ export default function App() {
               onNavigate={setCurrentScreen}
             />
           )}
+
+          {currentScreen === 'summary' && (
+            <ActivitySummaryScreen
+              sentences={sentences}
+              onSelectSentence={handleSelectSentence}
+              onNavigate={setCurrentScreen}
+              onOpenLogin={() => setIsLoginModalOpen(true)}
+            />
+          )}
         </main>
+
+        {/* In-Page Login Modal (never navigates away) */}
+        <LoginModal
+          isOpen={isLoginModalOpen}
+          onClose={() => setIsLoginModalOpen(false)}
+        />
       </div>
     </div>
   );

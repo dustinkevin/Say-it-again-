@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import confetti from 'canvas-confetti';
-import { Sparkles, RotateCcw, List, ArrowRight, Award, Mic, CheckCircle } from 'lucide-react';
+import { Sparkles, RotateCcw, List, ArrowRight, Award, Mic, CheckCircle, BarChart3 } from 'lucide-react';
 import { Sentence, SentenceProgress, ScreenType } from '../types';
 import { MOVIE_SETTINGS } from '../constants/insideOutData';
 
@@ -167,6 +167,14 @@ export const FinishScreen: React.FC<Props> = ({
             <span>Practice From Start</span>
           </div>
           <span className="text-[11px] font-normal text-sky-100">처음 문장부터 다시 연습</span>
+        </button>
+
+        <button
+          onClick={() => onNavigate('summary')}
+          className="w-full min-h-[46px] px-4 py-2.5 bg-amber-50 hover:bg-amber-100/80 active:scale-98 text-amber-900 border border-amber-200 font-bold rounded-2xl shadow-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer text-xs"
+        >
+          <BarChart3 className="w-4 h-4 text-amber-600" />
+          <span>활동 기록 요약 보기 / Activity Summary</span>
         </button>
 
         <button

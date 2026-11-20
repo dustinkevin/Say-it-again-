@@ -11,6 +11,7 @@ import {
   ShieldCheck,
   Clock,
   ArrowRight,
+  BarChart3,
 } from 'lucide-react';
 import { MOVIE_SETTINGS } from '../constants/insideOutData';
 import { ScreenType } from '../types';
@@ -152,6 +153,14 @@ export const StartScreen: React.FC<Props> = ({ onNavigate, sentenceCount }) => {
         >
           <Sliders className="w-3.5 h-3.5 text-slate-500" />
           <span>문장 편집 및 전체 목록 보기 (Edit Sentences)</span>
+        </button>
+
+        <button
+          onClick={() => onNavigate('summary')}
+          className="w-full min-h-[46px] px-4 py-2.5 bg-amber-50 hover:bg-amber-100/80 active:scale-[0.98] text-amber-900 border border-amber-200 font-bold rounded-2xl shadow-2xs flex items-center justify-center gap-2 transition-all cursor-pointer text-xs"
+        >
+          <BarChart3 className="w-3.5 h-3.5 text-amber-600" />
+          <span>학습 활동 기록 요약 보기 (Activity Summary)</span>
         </button>
       </div>
 

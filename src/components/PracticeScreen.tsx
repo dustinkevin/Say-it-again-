@@ -16,8 +16,10 @@ import {
   HelpCircle,
   AlertTriangle,
 } from 'lucide-react';
-import { Sentence, SentenceProgress, ShadowStep, ScreenType } from '../types';
+import { Sentence, SentenceProgress, ShadowStep, ScreenType, ActivityType } from '../types';
 import { YouTubePlayerRef } from './YouTubePlayer';
+import { useAuth } from '../contexts/AuthContext';
+import { recordUserActivity } from '../utils/activityLogs';
 
 interface Props {
   sentences: Sentence[];
@@ -41,6 +43,7 @@ export const PracticeScreen: React.FC<Props> = ({
   onUpdateProgress,
 }) => {
   const currentSentence = sentences[currentIndex];
+  const { user } = useAuth();
 
   // UI state
   const [currentStep, setCurrentStep] = useState<ShadowStep>(1);
@@ -61,6 +64,16 @@ export const PracticeScreen: React.FC<Props> = ({
   const audioChunksRef = useRef<Blob[]>([]);
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
   const recordStopTimerRef = useRef<any>(null);
+  const userIdRef = useRef<string | null>(null);
+  const currentStepRef = useRef<ShadowStep>(currentStep);
+
+  useEffect(() => {
+    userIdRef.current = user?.id ?? null;
+  }, [user]);
+
+  useEffect(() => {
+    currentStepRef.current = currentStep;
+  }, [currentStep]);
 
   // Speech Recognition state
   const [speechResult, setSpeechResult] = useState<{
@@ -155,7 +168,7 @@ export const PracticeScreen: React.FC<Props> = ({
   const isSentenceFullyDone = isStep4Recorded && isSelfCheckComplete;
 
   // 1. Play segment logic
-  const handlePlaySegment = (overrideLoop?: boolean) => {
+  const handlePlaySegment = (overrideLoop?: boolean, overrideActivityType?: ActivityType) => {
     if (!currentSentence) return;
     const loopToUse = overrideLoop !== undefined ? overrideLoop : isLooping;
     setIsPlayingSegment(true);
@@ -165,6 +178,18 @@ export const PracticeScreen: React.FC<Props> = ({
       ...prev,
       plays: prev.plays + 1,
     }));
+
+    // Measure & save listening (Step 1 / Original) or shadowing (Steps 2-4) activity to Supabase with timestamp
+    const activityType: ActivityType =
+      overrideActivityType ?? (currentStepRef.current === 1 ? 'listen' : 'shadow');
+    void recordUserActivity({
+      userId: userIdRef.current,
+      sentenceId: currentSentence.id,
+      sentenceText: currentSentence.text,
+      speaker: currentSentence.speaker,
+      step: currentStepRef.current,
+      activityType,
+    });
 
     playerRef.current?.playSegment(
       currentSentence.start,
@@ -225,12 +250,22 @@ export const PracticeScreen: React.FC<Props> = ({
 
         // Update progress: status becomes "practiced" or "done" if in step 4
         onUpdateProgress(currentSentence.id, (prev) => {
-          const nextStatus = currentStep === 4 ? 'done' : prev.status === 'done' ? 'done' : 'practiced';
+          const nextStatus = currentStepRef.current === 4 ? 'done' : prev.status === 'done' ? 'done' : 'practiced';
           return {
             ...prev,
             recordings: prev.recordings + 1,
             status: nextStatus,
           };
+        });
+
+        // Save shadowing activity record with timestamp to Supabase
+        void recordUserActivity({
+          userId: userIdRef.current,
+          sentenceId: currentSentence.id,
+          sentenceText: currentSentence.text,
+          speaker: currentSentence.speaker,
+          step: currentStepRef.current,
+          activityType: 'shadow',
         });
 
         // Release microphone tracks
@@ -304,7 +339,7 @@ export const PracticeScreen: React.FC<Props> = ({
       audioElementRef.current.pause();
       setIsPlayingMyVoice(false);
     }
-    handlePlaySegment(false);
+    handlePlaySegment(false, 'listen');
   };
 
   // 3. Self-check rating (3 questions: 0 = 😀, 1 = 🙂, 2 = 😐)

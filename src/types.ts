@@ -18,9 +18,24 @@ export interface SentenceProgress {
   status: ProgressStatus;
 }
 
-export type ScreenType = 'start' | 'list' | 'practice' | 'edit' | 'finish';
+export type ScreenType = 'start' | 'list' | 'practice' | 'edit' | 'finish' | 'summary';
 
 export type ShadowStep = 1 | 2 | 3 | 4;
+
+export type ActivityType = 'listen' | 'shadow';
+
+export interface UserActivityLog {
+  id: number | string;
+  user_id?: string;
+  sentence_id: number;
+  sentence_text: string | null;
+  speaker: string | null;
+  step: number;
+  activity_type: ActivityType;
+  listen_count: number;
+  shadow_count: number;
+  recorded_at: string;
+}
 
 export interface MovieSettings {
   titleEn: string;
