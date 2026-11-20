@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/client';
+import { createClient, isSupabaseConfigured } from '@/lib/supabase/client';
 import type { ActivityType, UserActivityLog } from '../types';
 
 const PENDING_LOGS_KEY = 'scene_shadow_pending_activity_logs_v1';
@@ -43,8 +43,8 @@ export async function recordUserActivity({
   const listenCount = activityType === 'listen' ? 1 : 0;
   const shadowCount = activityType === 'shadow' ? 1 : 0;
 
-  if (!userId) {
-    // Buffer locally when user is not signed in yet
+  if (!userId || !isSupabaseConfigured()) {
+    // Buffer locally when user is not signed in yet or Supabase env is unconfigured
     const localLog: UserActivityLog = {
       id: `local-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       sentence_id: sentenceId,
@@ -92,6 +92,7 @@ export async function recordUserActivity({
 }
 
 export async function syncPendingActivitiesToSupabase(userId: string): Promise<void> {
+  if (!isSupabaseConfigured()) return;
   const pending = loadPendingLocalLogs();
   if (pending.length === 0) return;
 
@@ -125,7 +126,7 @@ export async function fetchUserActivityLogs(userId?: string | null): Promise<{
   source: 'supabase' | 'local';
   error?: string;
 }> {
-  if (!userId) {
+  if (!userId || !isSupabaseConfigured()) {
     return {
       logs: loadPendingLocalLogs(),
       source: 'local',

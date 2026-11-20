@@ -1,22 +1,41 @@
 import { createBrowserClient } from '@supabase/ssr';
 
-function getEnv(key: string): string | undefined {
+function getProcessEnv(key: string): string | undefined {
   const proc = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process;
-  if (proc?.env?.[key]) {
-    return proc.env[key];
-  }
-  const viteEnv = import.meta.env as Record<string, string | undefined> | undefined;
-  return viteEnv?.[key];
+  return proc?.env?.[key];
+}
+
+export function getSupabaseConfig(): { url?: string; key?: string } {
+  // Static import.meta.env property accesses are required so Vite inlines them in production builds
+  const url =
+    import.meta.env?.NEXT_PUBLIC_SUPABASE_URL ||
+    import.meta.env?.VITE_SUPABASE_URL ||
+    getProcessEnv('NEXT_PUBLIC_SUPABASE_URL') ||
+    getProcessEnv('VITE_SUPABASE_URL');
+
+  const key =
+    import.meta.env?.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+    import.meta.env?.VITE_SUPABASE_PUBLISHABLE_KEY ||
+    import.meta.env?.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    import.meta.env?.VITE_SUPABASE_ANON_KEY ||
+    getProcessEnv('NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY') ||
+    getProcessEnv('VITE_SUPABASE_PUBLISHABLE_KEY') ||
+    getProcessEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY') ||
+    getProcessEnv('VITE_SUPABASE_ANON_KEY');
+
+  return {
+    url: url?.trim() || undefined,
+    key: key?.trim() || undefined,
+  };
+}
+
+export function isSupabaseConfigured(): boolean {
+  const { url, key } = getSupabaseConfig();
+  return Boolean(url && key);
 }
 
 export function createClient() {
-  const supabaseUrl =
-    getEnv('NEXT_PUBLIC_SUPABASE_URL') || getEnv('VITE_SUPABASE_URL');
-  const supabaseKey =
-    getEnv('NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY') ||
-    getEnv('VITE_SUPABASE_PUBLISHABLE_KEY') ||
-    getEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY') ||
-    getEnv('VITE_SUPABASE_ANON_KEY');
+  const { url: supabaseUrl, key: supabaseKey } = getSupabaseConfig();
 
   if (!supabaseUrl || !supabaseKey) {
     throw new Error(

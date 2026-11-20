@@ -7,7 +7,7 @@ import React, {
   useRef,
 } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
-import { createClient } from '@/lib/supabase/client';
+import { createClient, isSupabaseConfigured } from '@/lib/supabase/client';
 import { syncPendingActivitiesToSupabase } from '../utils/activityLogs';
 
 export interface UserProfile {
@@ -120,7 +120,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     let subscription: { unsubscribe: () => void } | null = null;
     let broadcastChannel: BroadcastChannel | null = null;
 
-    const supabase = getSupabase();
+    const supabaseReady = isSupabaseConfigured();
+    if (!supabaseReady) {
+      setIsLoading(false);
+      return;
+    }
+
+    let supabase: ReturnType<typeof createClient>;
+    try {
+      supabase = getSupabase();
+    } catch (err) {
+      console.warn('Supabase initialization skipped:', err);
+      setIsLoading(false);
+      return;
+    }
 
     const notifyOpenerIfPopup = (activeSession: Session | null) => {
       if (
@@ -289,6 +302,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setPopupBlockedUrl(null);
 
     try {
+      if (!isSupabaseConfigured()) {
+        setAuthError(
+          'Supabase 환경변수(NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY 또는 VITE_*)가 배포 환경에 설정되지 않았습니다.'
+        );
+        return;
+      }
+
       const supabase = getSupabase();
       const isInIframe =
         typeof window !== 'undefined' && window.self !== window.top;
